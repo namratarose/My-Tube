@@ -3,16 +3,15 @@ import { ApiError } from "../utils/ApiError.js"
 import { User } from "../models/user.model.js"
 import { uploadCloudinary } from "../utils/cloudinary.js";
 import { ApiResponse } from "../utils/ApiResponse.js"
-import { generateAccessToken, generateRefreshToken } from "../models/user.model.js"
 
 
 const generateAccessAndRefreshToken = async(userId) =>  {
     try {
         const user = await User.findById(userId)
-        const accessToken=generateAccessToken();
-        const refreshToken=generateRefreshToken();
-
-        user.refreshToken=refreshToken
+        const accessToken = user.generateAccessToken();
+        const refreshToken = user.generateRefreshToken();
+    
+        user.refreshToken = refreshToken
         await user.save({validateBeforeSave:false})
 
         return { accessToken,refreshToken }
@@ -101,12 +100,12 @@ const loginUser = asyncHandler(async (req,res) => {
         throw new ApiError(404,"user does not exist")
     }
 
-    const isPasswordValid = await isPasswordCorrect(password)
+    const isPasswordValid = await user.isPasswordCorrect(password)
     if(!isPasswordValid){
         throw new ApiError(401,"Invalid Password")
     }
 
-    const { accessToken, refreshToken } = generateAccessAndRefreshToken(user._id)
+    const { accessToken, refreshToken } = await generateAccessAndRefreshToken(user._id)
     
     const loggedInUser = await User.findById(user._id).select("-password -refreshToken")
 
