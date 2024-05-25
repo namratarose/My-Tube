@@ -163,39 +163,44 @@ const refreshAccessToken = asyncHandler(async(req,res) => {
         throw new ApiError(401,"unauthorized access")
     }
 
-    const decodedToken = jwt.verify(incomingRefreshToken,process.env.REFRESH_TOKEN_SECRET)
-
-    const user = await User.findById(decodedToken?._id)
-
-    if(!user){
-        throw new ApiError(401, "Invalid refresh token")
-    }
-
-    if(incomingRefreshToken!==user.refreshToken)
-    {
-        throw new ApiError(401, "Refresh Token is expired")
-    }
-
-    const {accessToken, newRefreshToken} = await generateAccessAndRefreshToken(user._id)
-
-    const options = {
-        httpOnly:true,
-        secure:true
-    }
-
-    return res
-    .cookie("accessToken",accessToken,options)
-    .cookie("refreshToken",newRefreshToken,options)
-    .json(
-        new ApiResponse(
-            200,
-            {
-                accessToken,
-                refressToken:newRefreshToken
-            },
-            "Access Token Refreshed"
+    try {
+        const decodedToken = jwt.verify(incomingRefreshToken,process.env.REFRESH_TOKEN_SECRET)
+    
+        const user = await User.findById(decodedToken?._id)
+    
+        if(!user){
+            throw new ApiError(401, "Invalid refresh token")
+        }
+    
+        if(incomingRefreshToken!==user.refreshToken)
+        {
+            throw new ApiError(401, "Refresh Token is expired")
+        }
+    
+        const {accessToken, newRefreshToken} = await generateAccessAndRefreshToken(user._id)
+    
+        const options = {
+            httpOnly:true,
+            secure:true
+        }
+    
+        return res
+        .cookie("accessToken",accessToken,options)
+        .cookie("refreshToken",newRefreshToken,options)
+        .json(
+            new ApiResponse(
+                200,
+                {
+                    accessToken,
+                    refressToken:newRefreshToken
+                },
+                "Access Token Refreshed"
+            )
         )
-    )
+    } catch (error) {
+        throw new ApiError(401, error?.message || "Invalid refresh token")
+        
+    }
 })
 
 export { 
