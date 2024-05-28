@@ -3,12 +3,10 @@ import { asyncHandler } from "../utils/asyncHandler.js"
 import jwt from "jsonwebtoken"
 import { User } from "../models/user.model.js"
 
-export const verifyJWT = asyncHandler((req,_,next)=>{ //Since res is not used here so we use dash ( _ ) in place of res
+export const verifyJWT = asyncHandler(async(req,_,next)=>{ //Since res is not used here so we use dash ( _ ) in place of res
 
     try {
         const token = req.cookies?.accessToken || req.header("Authorization")?.replace("Bearer ","")
-        
-        // console.log(token)
         
         if(!token)
         {
@@ -17,8 +15,8 @@ export const verifyJWT = asyncHandler((req,_,next)=>{ //Since res is not used he
     
         const decodedToken = jwt.verify(token, process.env.ACCESS_TOKEN_SECRET)
     
-        const user = User.findById(decodedToken._id).select (" -password -refreshToken")
-    
+        const user = await User.findById(decodedToken._id).select (" -password -refreshToken")
+
         if(!user){
             throw new ApiError(401,"Invalid Access Token")
         }
