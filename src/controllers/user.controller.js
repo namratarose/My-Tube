@@ -122,7 +122,9 @@ const loginUser = asyncHandler(async (req,res) => {
         new ApiResponse(
             200,
             {
-                user : loggedInUser,accessToken,refreshToken
+                user : loggedInUser,
+                accessToken,
+                refreshToken
             },
             "User logged in successfully"
         )
@@ -177,7 +179,7 @@ const refreshAccessToken = asyncHandler(async(req,res) => {
             throw new ApiError(401, "Refresh Token is expired")
         }
     
-        const {accessToken, newRefreshToken} = await generateAccessAndRefreshToken(user._id)
+        const {accessToken, refreshToken} = await generateAccessAndRefreshToken(user._id)
     
         const options = {
             httpOnly:true,
@@ -186,13 +188,13 @@ const refreshAccessToken = asyncHandler(async(req,res) => {
     
         return res
         .cookie("accessToken",accessToken,options)
-        .cookie("refreshToken",newRefreshToken,options)
+        .cookie("refreshToken",refreshToken,options)
         .json(
             new ApiResponse(
                 200,
                 {
                     accessToken,
-                    refressToken:newRefreshToken
+                    refreshToken:refreshToken
                 },
                 "Access Token Refreshed"
             )
