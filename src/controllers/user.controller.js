@@ -1,7 +1,7 @@
 import { asyncHandler } from "../utils/asyncHandler.js";
 import { ApiError } from "../utils/ApiError.js"
 import { User } from "../models/user.model.js"
-import { uploadCloudinary } from "../utils/cloudinary.js";
+import { uploadCloudinary, deleteFromCloudinary } from "../utils/cloudinary.js";
 import { ApiResponse } from "../utils/ApiResponse.js"
 import jwt from "jsonwebtoken"
 
@@ -254,7 +254,7 @@ const updateAccountDetails = asyncHandler(async(req,res) =>{
         throw new ApiError(400, "Full Name and Email is required")
     }
 
-    User.findByIdAndUpdate(
+    const user = await User.findByIdAndUpdate(
         req.user._id,
         {
             $set:{
@@ -285,11 +285,11 @@ const updateUserAvatar = asyncHandler(async(req,res) => {
         throw new ApiError(400, "Avatar file is missing")
     }
 
-     //TODO: delete old image - assignment
-     //  create utility function to delete image
+    //Getting public Id from url to delete old image from cloudinary
+    const url = (await User.findById(req.user._id)).avatar
+    const publicId = url.split("/").pop().split(".").shift()
 
     const avatar = await uploadCloudinary(avatarLocalPath)
-
     if(!avatar.url)
     {
         throw new Error(500, "Error while uploading the avatar")
@@ -307,24 +307,27 @@ const updateUserAvatar = asyncHandler(async(req,res) => {
         }
     ).select("-password")
 
+    //delete old image from cloudinary
+    const deleteAvatar = await deleteFromCloudinary(publicId)
+
     return res
     .status(200)
     .json(new ApiResponse(200, user, "Avatar image uploaded successfully" ))
 
 })
 const updateUserCoverImage = asyncHandler(async(req,res) => {
-    const coverImageLocalPath = req.file?.path
-    
+
+    const coverImageLocalPath = req.file?.path    
     if(!coverImageLocalPath)
     {
         throw new ApiError(400, "Cover Image file is missing")
     }
 
-     //TODO: delete old image - assignment
-     //  create utility function to delete image
+    //Getting public Id from url to delete old image from cloudinary
+    const url = (await User.findById(req.user._id)).coverImage
+    const publicId = url.split("/").pop().split(".").shift()
 
     const coverImage = await uploadCloudinary(coverImageLocalPath)
-
     if(!coverImage.url)
     {
         throw new Error(500, "Error while uploading the Cover Image")
@@ -341,6 +344,9 @@ const updateUserCoverImage = asyncHandler(async(req,res) => {
             new:true
         }
     ).select("-password")
+
+    //delete old image from cloudinary
+    const deletecoverImage = await deleteFromCloudinary(publicId)
 
     return res
     .status(200)
@@ -396,7 +402,7 @@ const getUserChannelProfile = asyncHandler(async(req,res) => {
             }
         },
         {
-            $Project: {
+            $project: {
                 fullName: 1,
                 username: 1,
                 subscribersCount: 1,
